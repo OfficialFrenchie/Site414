@@ -238,14 +238,14 @@ function listFiles(type) {
     writeLine("Available SCP Files:");
     for (const key in scpFiles) {
       if (scpFiles[key].level <= clearance) {
-        writeLine(`<span class='command'>open-file-${key}</span>`);
+        writeLine(`<span class='command'>${key}</span>`);
       }
     }
   } else if (type === 'personnel') {
     writeLine("Available Personnel Files:");
     for (const key in personnelFiles) {
       if (personnelFiles[key].level <= clearance) {
-        writeLine(`<span class='command'>open-file-${key}</span>`);
+        writeLine(`<span class='command'>${key}</span>`);
       }
     }
   }
