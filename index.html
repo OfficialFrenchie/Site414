@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SCP Foundation Terminal</title>
   <style>
     body {
@@ -36,18 +37,15 @@
     }
     #terminal {
       width: 90%;
-      height: 70%;
+      height: 80%;
       margin: 0 auto;
       border: 2px solid white;
       padding: 20px;
-      overflow-y: auto;
-      background-color: rgba(0, 0, 0, 0.7);
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.8) url('https://media.discordapp.net/attachments/1196956714973544550/1277860172382867569/1233_20240827074808.png?ex=68110a46&is=680fb8c6&hm=56cc9da40ee07dff87ad0dcb7795c37f200b7430f05b75b82154e0748d100962&=&format=webp&quality=lossless&width=1423&height=800') center/cover no-repeat;
+      background-blend-mode: darken;
       position: relative;
       cursor: text;
-      background-image: url('https://media.discordapp.net/attachments/1196956714973544550/1277860172382867569/1233_20240827074808.png?ex=68110a46&is=680fb8c6&hm=56cc9da40ee07dff87ad0dcb7795c37f200b7430f05b75b82154e0748d100962&=&format=webp&quality=lossless&width=1423&height=800');
-      background-size: cover;
-      background-repeat: no-repeat;
-      opacity: 0.8;
     }
     #input {
       width: 95%;
@@ -67,8 +65,8 @@
     .info {
       color: white;
     }
-    .loading {
-      color: green;
+    .success {
+      color: lightgreen;
     }
   </style>
 </head>
@@ -83,128 +81,175 @@
     <input id="input" autocomplete="off" autofocus>
   </div>
 
-  <script>
-    const output = document.getElementById('output');
-    const input = document.getElementById('input');
+<script>
+const output = document.getElementById('output');
+const input = document.getElementById('input');
+let stage = 'boot';
+let clearance = 0;
+const maxLines = 30;
 
-    let stage = 'booting';
-    let clearance = 0;
-    let siteLoggedIn = false;
+const siteCode = "site414";
 
-    const clearanceKeys = {
-      "lv1": 1,
-      "lv2": 2,
-      "lv3": 3,
-      "lv4": 4,
-      "lv5": 5,
-      "lv-omni": 6
-    };
+const clearanceKeys = {
+  "lv1": 1,
+  "lv2": 2,
+  "lv3": 3,
+  "lv4": 4,
+  "lv5": 5,
+  "lv-omni": 6
+};
 
-    const scpFiles = {
-      "SCP-001": { level: 0, text: "Item #: SCP-001\nObject Class: Keter\nDescription: [REDACTED]" },
-      "SCP-002": { level: 1, text: "Item #: SCP-002\nObject Class: Euclid\nDescription: Flesh spaceship." },
-      "SCP-003": { level: 2, text: "Item #: SCP-003\nObject Class: Euclid\nDescription: Mechanical entity." },
-      "SCP-004": { level: 3, text: "Item #: SCP-004\nObject Class: Keter\nDescription: Dangerous keys." }
-    };
+const scpFiles = {
+  "SCP-001": { level: 6, text: "Item #: SCP-001\nObject Class: Thaumiel\nDescription: Top Secret." },
+  "SCP-049": { level: 2, text: "Item #: SCP-049\nObject Class: Euclid\nDescription: Plague doctor entity." },
+  "SCP-073": { level: 3, text: "Item #: SCP-073\nObject Class: Euclid\nDescription: Humanoid entity known as 'Cain'." },
+  "SCP-096": { level: 2, text: "Item #: SCP-096\nObject Class: Euclid\nDescription: Shy humanoid creature." },
+  "SCP-106": { level: 4, text: "Item #: SCP-106\nObject Class: Keter\nDescription: Old man capable of passing through matter." },
+  "SCP-173": { level: 1, text: "Item #: SCP-173\nObject Class: Euclid\nDescription: Statue that moves when not observed." },
+  "SCP-682": { level: 4, text: "Item #: SCP-682\nObject Class: Keter\nDescription: Hard-to-destroy reptilian creature." },
+  "SCP-999": { level: 1, text: "Item #: SCP-999\nObject Class: Safe\nDescription: Friendly orange slime." }
+};
 
-    const taskForces = {
-      "Alpha-1": "a1",
-      "Epsilon-11": "e11",
-      "Nu-7": "nu7",
-      "Omega-1": "omg1",
-      "Titan-1": "t1",
-      "414": "414"
-    };
+const personnelFiles = {
+  "Smith": { level: 1, text: "Name: Smith\nRank: Researcher\nClearance Level: 1\nDepartment: Safe-Class Containment\nStatus: Active" },
+  "Jones": { level: 3, text: "Name: Jones\nRank: Senior Researcher\nClearance Level: 3\nDepartment: Keter-Class Containment\nStatus: Active" }
+};
 
-    function bootSystem() {
-      output.innerHTML = "<div class='loading'>Booting up SCP Foundation Terminal...</div>";
+const cfMainUnits = `Combative Forces:
+- Internal Affairs (IA)
+- Rapid Response Team (RRT)
+- Site Security Division (SSD)
+- Mobile Task Force (MTF)
+\nUse 'cf-info-mtf' to list Mobile Task Force Units.`;
+
+const mtfUnits = `Mobile Task Forces:
+- Alpha-1 : a1
+- Nu-7 : nu7
+- Epsilon-11 : e11
+- Omega-1 : o1
+- Strike Team-414 : 414
+- Titan-1 : t1
+- Alpha-9 : a9
+\nUse 'tf-info-(shortcut)' to view unit details.`;
+
+const taskForceInfo = {
+  "a1": "Alpha-1 operates as the "Red Right Hand," the most trusted agents to the O5 Council.",
+  "nu7": "Nu-7 'Hammer Down' specializes in large-scale assault and recontainment operations.",
+  "e11": "Epsilon-11 'Nine-Tailed Fox' specializes in internal security and rapid response.",
+  "o1": "Omega-1 intervenes where Ethics and secrecy are critical, acting under direct order of the Ethics Committee.",
+  "414": "Strike Team 414 provides VIP bodyguarding and operational security for Site 414 and associated Founders.",
+  "t1": "Titan-1 destabilizes enemies with fear and misinformation before breaching hostile sites.",
+  "a9": "Alpha-9 "Last Hope" is a task force of anomalous individuals cooperating with the Foundation."
+};
+
+function writeLine(text, style = 'info') {
+  const line = document.createElement('div');
+  line.innerText = text;
+  line.classList.add(style);
+  output.appendChild(line);
+  while (output.children.length > maxLines) {
+    output.removeChild(output.children[0]);
+  }
+  output.scrollTop = output.scrollHeight;
+}
+
+function handleCommand(command) {
+  command = command.toLowerCase();
+  if (stage === 'boot') {
+    writeLine("Initializing Terminal...", 'success');
+    setTimeout(() => {
+      writeLine("Loading Secure Channels...", 'success');
       setTimeout(() => {
-        output.innerHTML += "<div class='loading'>Loading secure database...</div>";
-      }, 1000);
-      setTimeout(() => {
-        output.innerHTML += "<div class='loading'>System ready. Please login with your site code (Example: Site01)</div>";
+        writeLine("Terminal Ready. Enter Site Code:", 'success');
         stage = 'site-login';
-      }, 2000);
+      }, 1000);
+    }, 1000);
+    return;
+  }
+
+  if (stage === 'site-login') {
+    if (command === siteCode) {
+      writeLine("Site Access Granted. Enter Clearance Key:");
+      stage = 'clearance-login';
+    } else {
+      writeLine("ACCESS DENIED. Incorrect Site Code.", 'error');
     }
+    return;
+  }
 
-    function clearTerminal() {
-      output.innerHTML = "";
+  if (stage === 'clearance-login') {
+    if (clearanceKeys[command]) {
+      clearance = clearanceKeys[command];
+      writeLine("Clearance Level " + clearance + " Granted.");
+      stage = 'command';
+      writeLine("Type 'help' to view available commands.");
+    } else {
+      writeLine("Invalid Clearance Key.", 'error');
     }
+    return;
+  }
 
-    bootSystem();
-
-    input.addEventListener('keydown', function(event) {
-      if (event.key === 'Enter') {
-        const command = input.value.trim().toLowerCase();
-        input.value = '';
-
-        if (command === '') return;
-
-        // Command logic
-        if (stage === 'site-login') {
-          if (command === 'site01') {
-            siteLoggedIn = true;
-            output.innerHTML += `<div class='info'>Site access granted. Please enter your clearance level (lv1, lv2, lv3, lv4, lv5, lv-omni):</div>`;
-            stage = 'clearance';
-          } else {
-            output.innerHTML += `<div class='error'>Invalid site code.</div>`;
-          }
-        } else if (stage === 'clearance') {
-          if (clearanceKeys[command]) {
-            clearance = clearanceKeys[command];
-            output.innerHTML += `<div class='info'>Clearance level ${command.toUpperCase()} confirmed. Type "help" to list available commands.</div>`;
-            stage = 'logged-in';
-          } else {
-            output.innerHTML += `<div class='error'>Invalid clearance key.</div>`;
-          }
-        } else if (stage === 'logged-in') {
-          if (command === 'help') {
-            output.innerHTML += `<div class='info'>Available commands: help, scp-list, cf-info, clear</div>`;
-          } else if (command === 'clear') {
-            clearTerminal();
-          } else if (command === 'scp-list') {
-            output.innerHTML += `<div class='info'>Available SCP Files:</div>`;
-            for (let scp in scpFiles) {
-              output.innerHTML += `<div class='info'>${scp}</div>`;
-            }
-          } else if (command === 'cf-info') {
-            output.innerHTML += `<div class='info'>Units Available:</div>`;
-            for (let tf in taskForces) {
-              output.innerHTML += `<div class='info'>${tf} : ${taskForces[tf]}</div>`;
-            }
-            output.innerHTML += `<div class='info'>To view Task Force information enter "cf-info-mtf"</div>`;
-          } else if (command === 'cf-info-mtf') {
-            output.innerHTML += `<div class='info'>Task Forces List:</div>`;
-            for (let tf in taskForces) {
-              output.innerHTML += `<div class='info'>${tf} : shortcut "${taskForces[tf]}"</div>`;
-            }
-            output.innerHTML += `<div class='info'>Use "tf-info-(shortcut)" to view detailed Task Force info!</div>`;
-          } else if (command.startsWith('tf-info-')) {
-            const tfShortcut = command.replace('tf-info-', '');
-            let found = false;
-            for (let tf in taskForces) {
-              if (taskForces[tf] === tfShortcut) {
-                output.innerHTML += `<div class='info'>[Placeholder info about ${tf}]</div>`;
-                found = true;
-              }
-            }
-            if (!found) {
-              output.innerHTML += `<div class='error'>Task Force not found.</div>`;
-            }
-          } else if (scpFiles[command.toUpperCase()]) {
-            const scp = scpFiles[command.toUpperCase()];
-            if (scp.level <= clearance) {
-              output.innerHTML += `<div class='info'>${scp.text}</div>`;
-            } else {
-              output.innerHTML += `<div class='error'>Access denied. Clearance level too low.</div>`;
-            }
-          } else {
-            output.innerHTML += `<div class='error'>Unknown command.</div>`;
-          }
-        }
-        output.scrollTop = output.scrollHeight;
+  if (stage === 'command') {
+    if (command === 'help') {
+      writeLine("Available Commands: help, clear, scp-list, personnel-list, cf-info, logout");
+    } else if (command === 'clear') {
+      output.innerHTML = '';
+    } else if (command === 'scp-list') {
+      writeLine("Available SCP Files:");
+      for (const key in scpFiles) {
+        if (scpFiles[key].level <= clearance) writeLine("- " + key);
       }
-    });
-  </script>
+      writeLine("Use 'open-file-[SCP]' to open a file.");
+    } else if (command === 'personnel-list') {
+      writeLine("Available Personnel Files:");
+      for (const key in personnelFiles) {
+        if (personnelFiles[key].level <= clearance) writeLine("- " + key);
+      }
+      writeLine("Use 'open-file-[Personnel]' to open a file.");
+    } else if (command === 'cf-info') {
+      writeLine(cfMainUnits);
+    } else if (command === 'cf-info-mtf') {
+      writeLine(mtfUnits);
+    } else if (command.startsWith('open-file-')) {
+      const file = command.substring(10);
+      if (scpFiles[file.toUpperCase()]) {
+        if (scpFiles[file.toUpperCase()].level <= clearance) {
+          writeLine(scpFiles[file.toUpperCase()].text);
+        } else writeLine("Insufficient Clearance.", 'error');
+      } else if (personnelFiles[file]) {
+        if (personnelFiles[file].level <= clearance) {
+          writeLine(personnelFiles[file].text);
+        } else writeLine("Insufficient Clearance.", 'error');
+      } else {
+        writeLine("File Not Found.", 'error');
+      }
+    } else if (command.startsWith('tf-info-')) {
+      const tf = command.substring(8);
+      if (taskForceInfo[tf]) {
+        writeLine(taskForceInfo[tf]);
+      } else {
+        writeLine("Task Force Not Found.", 'error');
+      }
+    } else if (command === 'logout') {
+      clearance = 0;
+      stage = 'site-login';
+      writeLine("Logged out. Enter Site Code:");
+    } else {
+      writeLine("Unknown Command.", 'error');
+    }
+  }
+}
+
+input.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    const command = input.value.trim();
+    input.value = '';
+    handleCommand(command);
+  }
+});
+
+document.getElementById('terminal').addEventListener('click', () => input.focus());
+</script>
+
 </body>
 </html>
