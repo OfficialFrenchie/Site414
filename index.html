@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>SCP Foundation Terminal</title>
   <style>
     body {
@@ -88,10 +87,11 @@
     const output = document.getElementById('output');
     const input = document.getElementById('input');
 
-    let stage = 'site-login';
+    let stage = 'booting';
     let clearance = 0;
+    let siteLoggedIn = false;
 
-    const keys = {
+    const clearanceKeys = {
       "lv1": 1,
       "lv2": 2,
       "lv3": 3,
@@ -101,150 +101,110 @@
     };
 
     const scpFiles = {
-      "SCP-001": { level: 0, text: "Item #: SCP-001\nObject Class: Keter\nDescription: The Gate Guardian, an ancient and dangerous entity." },
-      "SCP-002": { level: 1, text: "Item #: SCP-002\nObject Class: Euclid\nDescription: A large, living, organic mass resembling a sofa." },
-      "SCP-003": { level: 2, text: "Item #: SCP-003\nObject Class: Euclid\nDescription: A highly intelligent and interactive machine that learns from its environment." },
-      "SCP-004": { level: 3, text: "Item #: SCP-004\nObject Class: Euclid\nDescription: A set of keys that can open doors to alternate dimensions." },
-      "SCP-005": { level: 4, text: "Item #: SCP-005\nObject Class: Safe\nDescription: A key that can open any locked door." },
-      "SCP-006": { level: 4, text: "Item #: SCP-006\nObject Class: Safe\nDescription: A liquid that enhances human vitality and youth." },
-      "SCP-007": { level: 5, text: "Item #: SCP-007\nObject Class: Keter\nDescription: A humanoid entity with unexplainable cosmic powers." },
-      "SCP-008": { level: 5, text: "Item #: SCP-008\nObject Class: Keter\nDescription: A virus that causes rapid zombification." }
+      "SCP-001": { level: 0, text: "Item #: SCP-001\nObject Class: Keter\nDescription: [REDACTED]" },
+      "SCP-002": { level: 1, text: "Item #: SCP-002\nObject Class: Euclid\nDescription: Flesh spaceship." },
+      "SCP-003": { level: 2, text: "Item #: SCP-003\nObject Class: Euclid\nDescription: Mechanical entity." },
+      "SCP-004": { level: 3, text: "Item #: SCP-004\nObject Class: Keter\nDescription: Dangerous keys." }
     };
 
-    const personnelFiles = {
-      "DrJones": { level: 1, text: "Name: Dr. Jones\nRank: Senior Researcher\nClearance Level: 1\nDepartment: Safe-Class Containment\nDate of Employment: 2010\nSecurity Status: Active" },
-      "DrSmith": { level: 2, text: "Name: Dr. Smith\nRank: Researcher\nClearance Level: 2\nDepartment: Keter-Class Anomalies\nDate of Employment: 2015\nSecurity Status: Active" },
-      "DrAnderson": { level: 3, text: "Name: Dr. Anderson\nRank: Lead Researcher\nClearance Level: 3\nDepartment: Omega-7 Task Force\nDate of Employment: 2008\nSecurity Status: Active" }
+    const taskForces = {
+      "Alpha-1": "a1",
+      "Epsilon-11": "e11",
+      "Nu-7": "nu7",
+      "Omega-1": "omg1",
+      "Titan-1": "t1",
+      "414": "414"
     };
 
-    const taskForceInfo = {
-      "Alpha-1": {
-        info: "Alpha-1, also known as the 'Red Right Hand', specializes in high-priority, high-risk missions. They are the Foundation's elite force, acting as personal protection for the O5 Council members and high-priority anomalies.",
-        shortcut: "a1"
-      },
-      "Epsilon-11": {
-        info: "Epsilon-11, 'Nine-Tailed Fox', are the main containment team specializing in securing and re-controlling breached anomalies.",
-        shortcut: "e11"
-      },
-      "Nu-7": {
-        info: "Nu-7, 'Hammer Down', focuses on large-scale tactical operations, providing heavy support during breaches.",
-        shortcut: "Nu7"
-      },
-      "Omega-1": {
-        info: "Omega-1, 'The Ethics Committee’s Task Force', operates in situations involving ethics violations, delivering swift intervention in situations requiring moral oversight.",
-        shortcut: "o1"
-      },
-      "Titan-1": {
-        info: "Titan-1 is deployed to safeguard VIPs and eliminate hostile Groups of Interest using unconventional warfare tactics.",
-        shortcut: "T1"
-      },
-      "Task-Force-414": {
-        info: "Strike Team 414 is a specialized bodyguard squadron used for high-security missions, assisting Founders and escorting O5 council members when needed.",
-        shortcut: "TF414"
-      }
-    };
-
-    const cfInfo = `Combative Forces Information:
-- Mobile Task Force (MTF)
-- Rapid Response Team (RRT)
-- Internal Affairs (IA)
-- Site Security Team (SST)
-To view Task Force information, use "cf-info-[unit]"`;
-
-    function writeLine(text, isError = false, isLoading = false) {
-      const line = document.createElement('div');
-      line.innerText = text;
-      if (isError) line.classList.add('error');
-      else if (isLoading) line.classList.add('loading');
-      else line.classList.add('info');
-      output.appendChild(line);
-      output.scrollTop = output.scrollHeight;
+    function bootSystem() {
+      output.innerHTML = "<div class='loading'>Booting up SCP Foundation Terminal...</div>";
+      setTimeout(() => {
+        output.innerHTML += "<div class='loading'>Loading secure database...</div>";
+      }, 1000);
+      setTimeout(() => {
+        output.innerHTML += "<div class='loading'>System ready. Please login with your site code (Example: Site01)</div>";
+        stage = 'site-login';
+      }, 2000);
     }
 
-    input.addEventListener('keydown', function(e) {
-      if (e.key === 'Enter') {
+    function clearTerminal() {
+      output.innerHTML = "";
+    }
+
+    bootSystem();
+
+    input.addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') {
         const command = input.value.trim().toLowerCase();
         input.value = '';
-        handleCommand(command);
+
+        if (command === '') return;
+
+        // Command logic
+        if (stage === 'site-login') {
+          if (command === 'site01') {
+            siteLoggedIn = true;
+            output.innerHTML += `<div class='info'>Site access granted. Please enter your clearance level (lv1, lv2, lv3, lv4, lv5, lv-omni):</div>`;
+            stage = 'clearance';
+          } else {
+            output.innerHTML += `<div class='error'>Invalid site code.</div>`;
+          }
+        } else if (stage === 'clearance') {
+          if (clearanceKeys[command]) {
+            clearance = clearanceKeys[command];
+            output.innerHTML += `<div class='info'>Clearance level ${command.toUpperCase()} confirmed. Type "help" to list available commands.</div>`;
+            stage = 'logged-in';
+          } else {
+            output.innerHTML += `<div class='error'>Invalid clearance key.</div>`;
+          }
+        } else if (stage === 'logged-in') {
+          if (command === 'help') {
+            output.innerHTML += `<div class='info'>Available commands: help, scp-list, cf-info, clear</div>`;
+          } else if (command === 'clear') {
+            clearTerminal();
+          } else if (command === 'scp-list') {
+            output.innerHTML += `<div class='info'>Available SCP Files:</div>`;
+            for (let scp in scpFiles) {
+              output.innerHTML += `<div class='info'>${scp}</div>`;
+            }
+          } else if (command === 'cf-info') {
+            output.innerHTML += `<div class='info'>Units Available:</div>`;
+            for (let tf in taskForces) {
+              output.innerHTML += `<div class='info'>${tf} : ${taskForces[tf]}</div>`;
+            }
+            output.innerHTML += `<div class='info'>To view Task Force information enter "cf-info-mtf"</div>`;
+          } else if (command === 'cf-info-mtf') {
+            output.innerHTML += `<div class='info'>Task Forces List:</div>`;
+            for (let tf in taskForces) {
+              output.innerHTML += `<div class='info'>${tf} : shortcut "${taskForces[tf]}"</div>`;
+            }
+            output.innerHTML += `<div class='info'>Use "tf-info-(shortcut)" to view detailed Task Force info!</div>`;
+          } else if (command.startsWith('tf-info-')) {
+            const tfShortcut = command.replace('tf-info-', '');
+            let found = false;
+            for (let tf in taskForces) {
+              if (taskForces[tf] === tfShortcut) {
+                output.innerHTML += `<div class='info'>[Placeholder info about ${tf}]</div>`;
+                found = true;
+              }
+            }
+            if (!found) {
+              output.innerHTML += `<div class='error'>Task Force not found.</div>`;
+            }
+          } else if (scpFiles[command.toUpperCase()]) {
+            const scp = scpFiles[command.toUpperCase()];
+            if (scp.level <= clearance) {
+              output.innerHTML += `<div class='info'>${scp.text}</div>`;
+            } else {
+              output.innerHTML += `<div class='error'>Access denied. Clearance level too low.</div>`;
+            }
+          } else {
+            output.innerHTML += `<div class='error'>Unknown command.</div>`;
+          }
+        }
+        output.scrollTop = output.scrollHeight;
       }
     });
-
-    document.getElementById('terminal').addEventListener('click', () => input.focus());
-
-    function handleCommand(command) {
-      if (stage === 'site-login') {
-        if (keys[command.toUpperCase()]) {
-          writeLine("Site Access Confirmed.\nEnter Clearance Code (lv1-5 or lv-omni):", false, true);
-          stage = 'clearance-login';
-        } else {
-          writeLine("ACCESS DENIED. Incorrect Site Code.", true);
-        }
-        return;
-      }
-
-      if (stage === 'clearance-login') {
-        if (keys[command.toUpperCase()]) {
-          clearance = keys[command.toUpperCase()];
-          writeLine("Clearance Granted. Level: " + clearance, false, true);
-          stage = 'command';
-          writeLine("Type 'help' to view available commands.", false, true);
-        } else {
-          writeLine("Invalid Clearance Key.", true);
-        }
-        return;
-      }
-
-      if (stage === 'command') {
-        if (command === 'help') {
-          writeLine("Available Commands:\nhelp, scp-list, personnel-list, cf-info, clear, logout");
-        } else if (command === 'scp-list') {
-          listFiles('scp');
-        } else if (command === 'personnel-list') {
-          listFiles('personnel');
-        } else if (command === 'cf-info') {
-          writeLine("Task Forces:\nAlpha-1 : a1\nEpsilon-11 : e11\nNu-7 : Nu7\nOmega-1 : o1\nTitan-1 : T1\nTask-Force-414 : TF414\nTo view information on any unit, use 'cf-info-[unit]' like 'cf-info-a1' or 'cf-info-e11'.");
-        } else if (command.startsWith('cf-info-')) {
-          handleTaskForceInfo(command.substring(8));
-        } else if (command === 'clear') {
-          output.innerHTML = '';
-        } else if (command === 'logout') {
-          clearance = 0;
-          stage = 'site-login';
-          writeLine("Logged out. Enter Site Code:");
-        } else {
-          writeLine("Unknown Command.", true);
-        }
-      }
-    }
-
-    function listFiles(type) {
-      if (type === 'scp') {
-        writeLine("Available SCP Files:");
-        for (const key in scpFiles) {
-          if (scpFiles[key].level <= clearance) {
-            writeLine("- " + key);
-          }
-        }
-        writeLine("Use 'open-file-[SCP]' to view file.");
-      } else if (type === 'personnel') {
-        writeLine("Available Personnel Files:");
-        for (const key in personnelFiles) {
-          if (personnelFiles[key].level <= clearance) {
-            writeLine("- " + key);
-          }
-        }
-        writeLine("Use 'open-file-[Personnel]' to view file.");
-      }
-    }
-
-    function handleTaskForceInfo(unit) {
-      const tfInfo = taskForceInfo[unit];
-      if (tfInfo) {
-        writeLine(`Information on ${unit}:\n${tfInfo.info}\nShortcut: ${tfInfo.shortcut}`);
-      } else {
-        writeLine("Task Force not found.", true);
-      }
-    }
   </script>
 </body>
 </html>
