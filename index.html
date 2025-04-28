@@ -260,22 +260,22 @@ Type <span class="command">cf-info-[unit]</span> to view specific unit informati
             writeLine("- " + key);
           }
         }
-        writeLine("Use <span class='command'>open-file-[Name]</span> to view a file.");
+        writeLine("Use <span class='command'>open-file-[Personnel]</span> to view a file.");
       }
     }
 
-    function openFile(name) {
-      if (scpFiles[name.toUpperCase()]) {
-        if (scpFiles[name.toUpperCase()].level <= clearance) {
-          writeLine(scpFiles[name.toUpperCase()].text);
+    function openFile(file) {
+      if (scpFiles[file]) {
+        if (scpFiles[file].level <= clearance) {
+          writeLine(scpFiles[file].text);
         } else {
-          writeLine("Insufficient Clearance.", 'error');
+          writeLine("Access Denied. Insufficient Clearance.", 'error');
         }
-      } else if (personnelFiles[name]) {
-        if (personnelFiles[name].level <= clearance) {
-          writeLine(personnelFiles[name].text);
+      } else if (personnelFiles[file]) {
+        if (personnelFiles[file].level <= clearance) {
+          writeLine(personnelFiles[file].text);
         } else {
-          writeLine("Insufficient Clearance.", 'error');
+          writeLine("Access Denied. Insufficient Clearance.", 'error');
         }
       } else {
         writeLine("File Not Found.", 'error');
@@ -283,25 +283,20 @@ Type <span class="command">cf-info-[unit]</span> to view specific unit informati
     }
 
     function handleCfInfo(unit) {
-      if (unit === 'mtf') {
-        writeLine("Available MTF Units:");
-        for (const key in mtfUnits) {
-          writeLine(`- ${mtfUnits[key]} [Shortcut: <span class='command'>${key}</span>]`);
-        }
-        writeLine("Type <span class='command'>tf-info-[shortcut]</span> to view more.");
+      if (mtfUnits[unit]) {
+        writeLine(`Unit: ${unit}\n${mtfUnits[unit]}`, 'info');
       } else {
-        writeLine("Unit Info not found.", 'error');
+        writeLine("Task Force not found.", 'error');
       }
     }
 
-    function handleTfInfo(shortcut) {
-      if (mtfUnits[shortcut]) {
-        writeLine(mtfUnits[shortcut]);
+    function handleTfInfo(unit) {
+      if (mtfUnits[unit]) {
+        writeLine(`Task Force Info:\n${mtfUnits[unit]}`, 'info');
       } else {
-        writeLine("Task Force Info Not Found.", 'error');
+        writeLine("Task Force not found.", 'error');
       }
     }
-
   </script>
 </body>
 </html>
