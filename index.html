@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SCP Foundation Terminal</title>
+  <style>
+    body {
+      margin: 0;
+      background-color: black;
+      color: white;
+      font-family: 'Courier New', Courier, monospace;
+      overflow: hidden;
+      height: 100vh;
+    }
+    #header {
+      display: flex;
+      align-items: center;
+      padding: 10px;
+    }
+    #header img {
+      height: 50px;
+      margin-right: 10px;
+    }
+    #header h1 {
+      font-size: 32px;
+      color: white;
+      animation: glitch 1s infinite alternate;
+      position: relative;
+    }
+    @keyframes glitch {
+      0% { opacity: 1; transform: translate(0); }
+      25% { opacity: 0.8; transform: translate(1px, -1px); }
+      50% { opacity: 1; transform: translate(-1px, 1px); }
+      75% { opacity: 0.8; transform: translate(1px, 1px); }
+      100% { opacity: 1; transform: translate(0); }
+    }
+    #terminal {
+      width: 90%;
+      height: 80%;
+      margin: 0 auto;
+      border: 2px solid white;
+      padding: 20px;
+      overflow: hidden;
+      background: rgba(0, 0, 0, 0.7) url('https://media.discordapp.net/attachments/1196956714973544550/1277860172382867569/1233_20240827074808.png?ex=68110a46&is=680fb8c6&hm=56cc9da40ee07dff87ad0dcb7795c37f200b7430f05b75b82154e0748d100962&=&format=webp&quality=lossless&width=1423&height=800') no-repeat center center / cover;
+      position: relative;
+      cursor: text;
+      background-blend-mode: overlay;
+    }
+    #output {
+      height: 90%;
+      overflow-y: hidden;
+      padding-right: 10px;
+    }
+    #input {
+      width: 95%;
+      background: transparent;
+      border: none;
+      color: white;
+      font-family: inherit;
+      font-size: 1em;
+      outline: none;
+      position: absolute;
+      bottom: 10px;
+      left: 10px;
+    }
+    .error {
+      color: red;
+    }
+    .info {
+      color: white;
+    }
+    .success {
+      color: lime;
+    }
+  </style>
+</head>
+<body>
+  <div id="header">
+    <img src="https://pa1.aminoapps.com/7065/e3ecb32225ee751850fcc8141f12b919485dbe58r1-640-360_hq.gif" alt="SCP Logo">
+    <h1>SCP</h1>
+  </div>
+
+  <div id="terminal">
+    <div id="output"></div>
+    <input id="input" autocomplete="off" autofocus>
+  </div>
+
+  <script>
+    const output = document.getElementById('output');
+    const input = document.getElementById('input');
+
+    let stage = 'boot';
+    let clearance = 0;
+    const MAX_LINES = 20;
+
+    const keys = {
+      "lv1": 1,
+      "lv2": 2,
+      "lv3": 3,
+      "lv4": 4,
+      "lv5": 5,
+      "lv-omni": 6
+    };
+
+    const scpFiles = {
+      "SCP-001": { level: 5, text: "Item #: SCP-001\nObject Class: Apollyon\nDescription: Multiple proposals exist regarding SCP-001." },
+      "SCP-002": { level: 1, text: "Item #: SCP-002\nObject Class: Euclid\nDescription: A fleshy, organic object resembling a furnished room." },
+      "SCP-003": { level: 2, text: "Item #: SCP-003\nObject Class: Euclid\nDescription: A techno-organic entity that adapts rapidly." },
+      "SCP-004": { level: 3, text: "Item #: SCP-004\nObject Class: Euclid\nDescription: Anomalous keys and a dangerous door." },
+      "SCP-005": { level: 1, text: "Item #: SCP-005\nObject Class: Safe\nDescription: A skeleton key capable of unlocking any lock." },
+      "SCP-006": { level: 2, text: "Item #: SCP-006\nObject Class: Safe\nDescription: A small spring with properties of rejuvenation." },
+      "SCP-007": { level: 3, text: "Item #: SCP-007\nObject Class: Euclid\nDescription: A man with a miniature Earth embedded in his abdomen." },
+      "SCP-008": { level: 4, text: "Item #: SCP-008\nObject Class: Euclid\nDescription: A prion causing zombification." }
+    };
+
+    const personnelFiles = {
+      "Smith": { level: 1, text: "Name: John Smith\nRank: Researcher\nClearance Level: 1\nDepartment: Safe-Class Containment\nSecurity Status: Active" },
+      "Jones": { level: 3, text: "Name: Robert Jones\nRank: Senior Researcher\nClearance Level: 3\nDepartment: Keter-Class Anomalies\nSecurity Status: Active" }
+    };
+
+    function writeLine(text, type = 'info') {
+      const line = document.createElement('div');
+      line.innerText = text;
+      line.classList.add(type);
+      output.appendChild(line);
+      output.scrollTop = output.scrollHeight;
+      manageLines();
+    }
+
+    function manageLines() {
+      const lines = output.querySelectorAll('div');
+      if (lines.length > MAX_LINES) {
+        lines[0].remove();
+      }
+    }
+
+    function bootSequence() {
+      writeLine("Booting system...", 'success');
+      setTimeout(() => writeLine("Loading Foundation terminal...", 'success'), 500);
+      setTimeout(() => writeLine("Origin: Anderson Robotics", 'success'), 1000);
+      setTimeout(() => {
+        writeLine("Enter Site Code:");
+        stage = 'site-login';
+      }, 1500);
+    }
+
+    input.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') {
+        const command = input.value.trim().toLowerCase();
+        input.value = '';
+        handleCommand(command);
+      }
+    });
+
+    document.getElementById('terminal').addEventListener('click', () => input.focus());
+
+    function handleCommand(command) {
+      if (stage === 'site-login') {
+        if (command === "site01") {
+          writeLine("Site01 Access Confirmed.\nEnter Clearance Code (lv1 - lv5 or lv-omni):");
+          stage = 'clearance-login';
+        } else {
+          writeLine("ACCESS DENIED. Incorrect Site Code.", 'error');
+        }
+        return;
+      }
+
+      if (stage === 'clearance-login') {
+        if (keys[command]) {
+          clearance = keys[command];
+          writeLine("Clearance Granted. Level: " + clearance, 'success');
+          stage = 'command';
+          writeLine("Type 'help' to view available commands.");
+        } else {
+          writeLine("Invalid Clearance Key.", 'error');
+        }
+        return;
+      }
+
+      if (stage === 'command') {
+        if (command === 'help') {
+          writeLine("Available Commands: help, scp-list, personnel-list, cf-info, clear, logout");
+        } else if (command === 'scp-list') {
+          listFiles('scp');
+        } else if (command === 'personnel-list') {
+          listFiles('personnel');
+        } else if (command === 'cf-info') {
+          writeLine("Available Combative Units:");
+          writeLine("- Mobile Task Force (MTF)");
+          writeLine("- Rapid Response Team (RRT)");
+          writeLine("- Internal Affairs (IA)");
+          writeLine("- Site Security Team (SST)");
+          writeLine('To view information enter "cf-info-[unit]"');
+        } else if (command === 'cf-info-mtf') {
+          writeLine("Mobile Task Force (MTF):\nSpecialized teams for rapid-response operations involving anomalous threats.");
+        } else if (command === 'cf-info-rrt') {
+          writeLine("Rapid Response Team (RRT):\nFirst responders during internal or external breaches.");
+        } else if (command === 'cf-info-ia') {
+          writeLine("Internal Affairs (IA):\nHandles internal security, personnel background checks, and integrity enforcement.");
+        } else if (command === 'cf-info-sst') {
+          writeLine("Site Security Team (SST):\nDefends the facility against internal and external threats, maintaining security protocols.");
+        } else if (command === 'clear') {
+          output.innerHTML = '';
+        } else if (command === 'logout') {
+          clearance = 0;
+          stage = 'site-login';
+          writeLine("Logged out. Enter Site Code:");
+        } else if (command.startsWith('open-file-')) {
+          openFile(command.substring(10));
+        } else {
+          writeLine("Unknown Command.", 'error');
+        }
+      }
+    }
+
+    function listFiles(type) {
+      if (type === 'scp') {
+        writeLine("Available SCP Files:");
+        for (const key in scpFiles) {
+          if (scpFiles[key].level <= clearance) {
+            writeLine("- " + key);
+          }
+        }
+        writeLine("Use 'open-file-[SCP]' to view file.");
+      } else if (type === 'personnel') {
+        writeLine("Available Personnel Files:");
+        for (const key in personnelFiles) {
+          if (personnelFiles[key].level <= clearance) {
+            writeLine("- " + key);
+          }
+        }
+        writeLine("Use 'open-file-[Personnel]' to view file.");
+      }
+    }
+
+    function openFile(name) {
+      name = name.replace(/\s/g, '');
+      if (scpFiles[name.toUpperCase()]) {
+        if (scpFiles[name.toUpperCase()].level <= clearance) {
+          writeLine(scpFiles[name.toUpperCase()].text);
+        } else {
+          writeLine("Insufficient Clearance.", 'error');
+        }
+      } else if (personnelFiles[name]) {
+        if (personnelFiles[name].level <= clearance) {
+          writeLine(personnelFiles[name].text);
+        } else {
+          writeLine("Insufficient Clearance.", 'error');
+        }
+      } else {
+        writeLine("File Not Found.", 'error');
+      }
+    }
+
+    bootSequence();
+  </script>
+</body>
+</html>
