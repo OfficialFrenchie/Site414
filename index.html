@@ -103,19 +103,14 @@ const keys = {
 };
 
 const scpFiles = {
-  "SCP-001": { level: 5, text: "Item #: SCP-001\nObject Class: Apollyon\nDescription: Placeholder classified." },
+  "SCP-999": { level: 1, text: "Item #: SCP-999\nObject Class: Safe\nDescription: Friendly orange slime." },
   "SCP-049": { level: 2, text: "Item #: SCP-049\nObject Class: Euclid\nDescription: Plague doctor entity." },
   "SCP-096": { level: 2, text: "Item #: SCP-096\nObject Class: Euclid\nDescription: Shy humanoid creature." },
-  "SCP-106": { level: 4, text: "Item #: SCP-106\nObject Class: Keter\nDescription: Corrosive old man capable of teleportation." },
-  "SCP-173": { level: 1, text: "Item #: SCP-173\nObject Class: Euclid\nDescription: Moves quickly when not observed." },
-  "SCP-682": { level: 4, text: "Item #: SCP-682\nObject Class: Keter\nDescription: Indestructible reptile." },
-  "SCP-914": { level: 2, text: "Item #: SCP-914\nObject Class: Safe\nDescription: Clockwork machine with refining properties." },
-  "SCP-999": { level: 1, text: "Item #: SCP-999\nObject Class: Safe\nDescription: Friendly orange slime." }
+  "SCP-106": { level: 4, text: "Item #: SCP-106\nObject Class: Keter\nDescription: Corrosive old man capable of teleportation." }
 };
 
 const personnelFiles = {
-  "Smith": { level: 1, text: "Name: Smith\nRank: Researcher\nClearance Level: 1\nDepartment: Safe-Class Containment" },
-  "Jones": { level: 3, text: "Name: Jones\nRank: Senior Researcher\nClearance Level: 3\nDepartment: Keter-Class Containment" }
+  "Smith": { level: 1, text: "Name: Smith\nRank: Researcher\nClearance Level: 1\nDepartment: Safe-Class Containment" }
 };
 
 const cfInfo = `Combative Forces:
@@ -127,13 +122,23 @@ const cfInfo = `Combative Forces:
 Type <span class="command">cf-info-[unit]</span> to view specific unit information.`;
 
 const mtfUnits = {
-  "a1": "Alpha-1 ('Red Right Hand')",
-  "e11": "Epsilon-11 ('Nine-Tailed Fox')",
-  "nu7": "Nu-7 ('Hammer Down')",
-  "omega1": "Omega-1: Ethics Committee enforcers",
-  "titan1": "Titan-1: VIP protection & psychological ops",
-  "414": "Task Force 414: VIP escort & O5 protection",
-  "alpha9": "Alpha-9 ('Last Hope')"
+  "a1": "Alpha-1",
+  "a9": "Alpha-9",
+  "o1": "Omega-1",
+  "e11": "Epsilon-11",
+  "nu7": "Nu-7",
+  "t1": "Titan-1",
+  "414": "Task Force 414"
+};
+
+const mtfInfo = {
+  "a1": "Alpha-1 ('Red Right Hand') operates directly under the O5 Council. They execute missions requiring absolute loyalty and discretion.",
+  "a9": "Alpha-9 ('Last Hope') is a task force composed of SCP anomalies that have agreed to assist the Foundation.",
+  "o1": "Omega-1 operates directly under the Ethics Committee, deployed in matters of utmost secrecy and ethical danger.",
+  "e11": "Epsilon-11 ('Nine-Tailed Fox') handles internal security breaches, particularly large-scale containment breaches.",
+  "nu7": "Nu-7 ('Hammer Down') specializes in armed response to large-scale threats, including hostile SCPs and enemy forces.",
+  "t1": "Titan-1 safeguards VIPs and eliminates hostile Groups of Interest using psychological operations and subterfuge.",
+  "414": "Task Force 414 is a specialized VIP escort team assisting O5 members and major Foundation VIPs."
 };
 
 function writeLine(text, type = 'info') {
@@ -196,41 +201,34 @@ function handleCommand(rawCommand) {
   }
 
   if (stage === 'command') {
-    switch (command) {
-      case 'help':
-        writeLine("Available Commands:\n" +
-          "<span class='command'>help</span>\n" +
-          "<span class='command'>scp-list</span>\n" +
-          "<span class='command'>personnel-list</span>\n" +
-          "<span class='command'>cf-info</span>\n" +
-          "<span class='command'>clear</span>\n" +
-          "<span class='command'>logout</span>");
-        break;
-      case 'scp-list':
-        listFiles('scp');
-        break;
-      case 'personnel-list':
-        listFiles('personnel');
-        break;
-      case 'cf-info':
-        writeLine(cfInfo);
-        break;
-      case 'clear':
-        output.innerHTML = '';
-        break;
-      case 'logout':
-        clearance = 0;
-        stage = 'site-login';
-        writeLine("Logged out.\nEnter Site Code:");
-        break;
-      default:
-        if (command.startsWith('open-file-')) {
-          openFile(rawCommand.substring(10)); // <-- here fix casing issue
-        } else if (command.startsWith('cf-info-mtf')) {
-          showMtfUnits();
-        } else {
-          writeLine("Unknown command.", 'error');
-        }
+    if (command === 'help') {
+      writeLine("Available Commands:\n" +
+        "<span class='command'>help</span>\n" +
+        "<span class='command'>scp-list</span>\n" +
+        "<span class='command'>personnel-list</span>\n" +
+        "<span class='command'>cf-info</span>\n" +
+        "<span class='command'>clear</span>\n" +
+        "<span class='command'>logout</span>");
+    } else if (command === 'scp-list') {
+      listFiles('scp');
+    } else if (command === 'personnel-list') {
+      listFiles('personnel');
+    } else if (command === 'cf-info') {
+      writeLine(cfInfo);
+    } else if (command.startsWith('cf-info-mtf')) {
+      showMtfUnits();
+    } else if (command.startsWith('tf-info-')) {
+      showMtfInfo(command.substring(8));
+    } else if (command === 'clear') {
+      output.innerHTML = '';
+    } else if (command === 'logout') {
+      clearance = 0;
+      stage = 'site-login';
+      writeLine("Logged out.\nEnter Site Code:");
+    } else if (command.startsWith('open-file-')) {
+      openFile(rawCommand.substring(10));
+    } else {
+      writeLine("Unknown command.", 'error');
     }
   }
 }
@@ -254,7 +252,7 @@ function listFiles(type) {
 }
 
 function openFile(file) {
-  file = file.toUpperCase(); // fix so SCP-xxx matches dictionary!
+  file = file.toUpperCase();
   if (scpFiles[file]) {
     if (scpFiles[file].level <= clearance) {
       writeLine(scpFiles[file].text);
@@ -273,9 +271,18 @@ function openFile(file) {
 }
 
 function showMtfUnits() {
-  writeLine("MTF Units:");
-  for (const short in mtfUnits) {
-    writeLine(`<span class='command'>${short}</span> : ${mtfUnits[short]}`);
+  writeLine("Available MTF Units:");
+  for (const shortcut in mtfUnits) {
+    writeLine(`${mtfUnits[shortcut]} | Shortcut: <span class='command'>${shortcut}</span>`);
+  }
+  writeLine("Type <span class='command'>tf-info-[shortcut]</span> to view specific unit information.");
+}
+
+function showMtfInfo(shortcut) {
+  if (mtfInfo[shortcut]) {
+    writeLine(mtfInfo[shortcut]);
+  } else {
+    writeLine("Unknown MTF unit.", 'error');
   }
 }
 </script>
