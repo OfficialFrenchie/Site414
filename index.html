@@ -1,290 +1,250 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>SCP Foundation Terminal</title>
-  <style>
-    body {
-      margin: 0;
-      background-color: black;
-      color: white;
-      font-family: 'Courier New', Courier, monospace;
-      overflow: hidden;
-      height: 100vh;
-    }
-    #header {
-      display: flex;
-      align-items: center;
-      padding: 10px;
-    }
-    #header img {
-      height: 50px;
-      margin-right: 10px;
-    }
-    #header h1 {
-      font-size: 32px;
-      color: white;
-      animation: glitch 1s infinite alternate;
-    }
-    @keyframes glitch {
-      0% { opacity: 1; transform: translate(0); }
-      25% { opacity: 0.8; transform: translate(1px, -1px); }
-      50% { opacity: 1; transform: translate(-1px, 1px); }
-      75% { opacity: 0.8; transform: translate(1px, 1px); }
-      100% { opacity: 1; transform: translate(0); }
-    }
-    #terminal {
-      width: 90%;
-      height: 80%;
-      margin: 0 auto;
-      border: 2px solid white;
-      padding: 20px;
-      overflow: hidden;
-      background: rgba(0, 0, 0, 0.7) url('https://media.discordapp.net/attachments/1196956714973544550/1277860172382867569/1233_20240827074808.png?ex=68110a46&is=680fb8c6&hm=56cc9da40ee07dff87ad0dcb7795c37f200b7430f05b75b82154e0748d100962&=&format=webp&quality=lossless&width=1423&height=800') no-repeat center center;
-      background-size: cover;
-      position: relative;
-      cursor: text;
-      background-blend-mode: overlay;
-    }
-    #output {
-      height: 90%;
-      overflow-y: hidden;
-    }
-    #input {
-      width: 95%;
-      background: transparent;
-      border: none;
-      color: white;
-      font-family: inherit;
-      font-size: 1em;
-      outline: none;
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-    }
-    .error {
-      color: red;
-    }
-    .info {
-      color: white;
-      white-space: pre-line;
-    }
-    .success {
-      color: limegreen;
-      white-space: pre-line;
-    }
-    .command {
-      color: limegreen;
-      font-weight: bold;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Foundation Terminal</title>
+<style>
+  body {
+    margin: 0;
+    background: url('https://media.discordapp.net/attachments/1196956714973544550/1277860172382867569/1233_20240827074808.png?ex=68110a46&is=680fb8c6&hm=56cc9da40ee07dff87ad0dcb7795c37f200b7430f05b75b82154e0748d100962&=&format=webp&quality=lossless&width=1423&height=800') no-repeat center center fixed;
+    background-size: cover;
+    backdrop-filter: brightness(0.5);
+    font-family: monospace;
+    color: #00FF00;
+  }
+  #terminal {
+    background-color: rgba(0,0,0,0.8);
+    margin: 50px auto;
+    padding: 20px;
+    width: 90%;
+    height: 600px;
+    overflow: hidden;
+    border: 2px solid #00FF00;
+    position: relative;
+  }
+  #output {
+    overflow-y: hidden;
+    height: 90%;
+    margin-bottom: 10px;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column-reverse;
+  }
+  #input-line {
+    width: 100%;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: #00FF00;
+    font-family: monospace;
+    font-size: 16px;
+  }
+  .command {
+    color: #00FF00;
+    font-weight: bold;
+  }
+</style>
 </head>
 <body>
-<div id="header">
-  <img src="https://pa1.aminoapps.com/7065/e3ecb32225ee751850fcc8141f12b919485dbe58r1-640-360_hq.gif" alt="SCP Logo">
-  <h1>SCP</h1>
-</div>
-
-<div id="terminal">
+<div id="terminal" onclick="focusInput()">
   <div id="output"></div>
-  <input id="input" autocomplete="off" autofocus>
+  <input id="input-line" autofocus>
 </div>
 
 <script>
 const output = document.getElementById('output');
-const input = document.getElementById('input');
+const inputLine = document.getElementById('input-line');
 
-let stage = 'booting';
+let loggedIn = false;
+let siteLogged = false;
 let clearance = 0;
-const maxLines = 40;
-
-const keys = {
-  "lv1": 1, "lv2": 2, "lv3": 3, "lv4": 4, "lv5": 5, "lv-omni": 6
-};
+let booted = false;
 
 const scpFiles = {
-  "SCP-999": { level: 1, text: "Item #: SCP-999\nObject Class: Safe\nDescription: Friendly orange slime." },
-  "SCP-049": { level: 2, text: "Item #: SCP-049\nObject Class: Euclid\nDescription: Plague doctor entity." },
-  "SCP-096": { level: 2, text: "Item #: SCP-096\nObject Class: Euclid\nDescription: Shy humanoid creature." },
-  "SCP-106": { level: 4, text: "Item #: SCP-106\nObject Class: Keter\nDescription: Corrosive old man capable of teleportation." }
+  'SCP-001': { level: 5, content: 'SCP-001 is classified top secret.' },
+  'SCP-049': { level: 3, content: 'SCP-049 is the Plague Doctor.' },
+  'SCP-096': { level: 2, content: 'SCP-096 is the Shy Guy.' },
+  'SCP-106': { level: 4, content: 'SCP-106 is the Old Man.' },
+  'SCP-999': { level: 1, content: 'SCP-999 is the Tickle Monster.' }
 };
 
 const personnelFiles = {
-  "Smith": { level: 1, text: "Name: Smith\nRank: Researcher\nClearance Level: 1\nDepartment: Safe-Class Containment" }
+  'Jones': { level: 2, content: 'Dr. Jones: Researcher specializing in SCP-049.' },
+  'Smith': { level: 3, content: 'Agent Smith: Task Force Commander.' },
+  'Doe': { level: 4, content: 'Dr. Doe: Senior Researcher, SCP-096 Project Lead.' }
 };
 
-const cfInfo = `Combative Forces:
-- Mobile Task Force (MTF)
-- Rapid Response Team (RRT)
-- Site Security Department (SSD)
-- Internal Affairs (IA)
-
-Type <span class="command">cf-info-[unit]</span> to view specific unit information.`;
-
-const mtfUnits = {
-  "a1": "Alpha-1",
-  "a9": "Alpha-9",
-  "o1": "Omega-1",
-  "e11": "Epsilon-11",
-  "nu7": "Nu-7",
-  "t1": "Titan-1",
-  "414": "Task Force 414"
-};
-
-const mtfInfo = {
-  "a1": "Alpha-1 ('Red Right Hand') operates directly under the O5 Council. They execute missions requiring absolute loyalty and discretion.",
-  "a9": "Alpha-9 ('Last Hope') is a task force composed of SCP anomalies that have agreed to assist the Foundation.",
-  "o1": "Omega-1 operates directly under the Ethics Committee, deployed in matters of utmost secrecy and ethical danger.",
-  "e11": "Epsilon-11 ('Nine-Tailed Fox') handles internal security breaches, particularly large-scale containment breaches.",
-  "nu7": "Nu-7 ('Hammer Down') specializes in armed response to large-scale threats, including hostile SCPs and enemy forces.",
-  "t1": "Titan-1 safeguards VIPs and eliminates hostile Groups of Interest using psychological operations and subterfuge.",
-  "414": "Task Force 414 is a specialized VIP escort team assisting O5 members and major Foundation VIPs."
-};
-
-function writeLine(text, type = 'info') {
-  const line = document.createElement('div');
-  line.innerHTML = text;
-  line.className = type;
-  output.appendChild(line);
-  output.scrollTop = output.scrollHeight;
-  manageLines();
+function focusInput() {
+  inputLine.focus();
 }
 
-function manageLines() {
-  const lines = output.querySelectorAll('div');
-  if (lines.length > maxLines) lines[0].remove();
+function writeLine(text) {
+  const newLine = document.createElement('div');
+  newLine.innerHTML = text;
+  output.prepend(newLine);
 }
 
-function bootSequence() {
-  setTimeout(() => writeLine("Booting SCP Foundation Terminal System...", 'success'), 500);
-  setTimeout(() => writeLine("Loading Site414 mainframe...", 'success'), 1500);
-  setTimeout(() => {
-    writeLine("Connection Established.\nEnter Site Code:");
-    stage = 'site-login';
-  }, 2500);
+function bootSystem() {
+  booted = true;
+  writeLine('Booting up Foundation Terminal...');
+  setTimeout(() => writeLine('Connecting to Site414 Terminal...'), 500);
+  setTimeout(() => writeLine('Connection Established.'), 1000);
+  setTimeout(() => writeLine('Please enter Site Code:'), 1500);
 }
 
-document.addEventListener('DOMContentLoaded', bootSequence);
-document.getElementById('terminal').addEventListener('click', () => input.focus());
-
-input.addEventListener('keydown', function(e) {
-  if (e.key === 'Enter') {
-    const command = input.value.trim();
-    input.value = '';
-    handleCommand(command);
+function loginSite(siteCode) {
+  if (siteCode.toLowerCase() === 'site414') {
+    siteLogged = true;
+    writeLine('Site recognized. Please enter your Clearance Key (lv1-5 / lv-omni):');
+  } else {
+    writeLine('Invalid Site Code. Try again.');
   }
-});
+}
 
-function handleCommand(rawCommand) {
-  const command = rawCommand.toLowerCase();
-
-  if (stage === 'site-login') {
-    if (command === 'site414') {
-      writeLine("Site414 Access Confirmed.\nEnter Clearance Code (lv1-lv5 or lv-omni):");
-      stage = 'clearance-login';
-    } else {
-      writeLine("ACCESS DENIED. Incorrect Site Code.", 'error');
-    }
-    return;
-  }
-
-  if (stage === 'clearance-login') {
-    if (keys[command]) {
-      clearance = keys[command];
-      writeLine("Clearance Level " + clearance + " Granted.");
-      writeLine("Type <span class='command'>help</span> to view available commands.");
-      stage = 'command';
-    } else {
-      writeLine("Invalid Clearance Code.", 'error');
-    }
-    return;
-  }
-
-  if (stage === 'command') {
-    if (command === 'help') {
-      writeLine("Available Commands:\n" +
-        "<span class='command'>help</span>\n" +
-        "<span class='command'>scp-list</span>\n" +
-        "<span class='command'>personnel-list</span>\n" +
-        "<span class='command'>cf-info</span>\n" +
-        "<span class='command'>clear</span>\n" +
-        "<span class='command'>logout</span>");
-    } else if (command === 'scp-list') {
-      listFiles('scp');
-    } else if (command === 'personnel-list') {
-      listFiles('personnel');
-    } else if (command === 'cf-info') {
-      writeLine(cfInfo);
-    } else if (command.startsWith('cf-info-mtf')) {
-      showMtfUnits();
-    } else if (command.startsWith('tf-info-')) {
-      showMtfInfo(command.substring(8));
-    } else if (command === 'clear') {
-      output.innerHTML = '';
-    } else if (command === 'logout') {
-      clearance = 0;
-      stage = 'site-login';
-      writeLine("Logged out.\nEnter Site Code:");
-    } else if (command.startsWith('open-file-')) {
-      openFile(rawCommand.substring(10));
-    } else {
-      writeLine("Unknown command.", 'error');
-    }
+function setClearanceKey(key) {
+  const clearanceMap = {
+    'lv1': 1,
+    'lv2': 2,
+    'lv3': 3,
+    'lv4': 4,
+    'lv5': 5,
+    'lv-omni': 6
+  };
+  const lowerKey = key.toLowerCase();
+  if (clearanceMap[lowerKey]) {
+    clearance = clearanceMap[lowerKey];
+    loggedIn = true;
+    writeLine('Access Granted. Type <span class="command">help</span> for a list of commands.');
+  } else {
+    writeLine('Invalid Clearance Key. Try again.');
   }
 }
 
 function listFiles(type) {
   if (type === 'scp') {
-    writeLine("Available SCP Files:");
+    writeLine("Available SCP Files:\n");
     for (const key in scpFiles) {
       if (scpFiles[key].level <= clearance) {
         writeLine(`<span class='command'>${key}</span>`);
       }
     }
+    writeLine("\nType <span class='command'>open-file-[SCP-Number]</span> to view a specific file.");
   } else if (type === 'personnel') {
-    writeLine("Available Personnel Files:");
+    writeLine("Available Personnel Files:\n");
     for (const key in personnelFiles) {
       if (personnelFiles[key].level <= clearance) {
         writeLine(`<span class='command'>${key}</span>`);
       }
     }
+    writeLine("\nType <span class='command'>open-file-[Personnel-Name]</span> to view a specific file.");
   }
 }
 
-function openFile(file) {
-  file = file.toUpperCase();
-  if (scpFiles[file]) {
-    if (scpFiles[file].level <= clearance) {
-      writeLine(scpFiles[file].text);
-    } else {
-      writeLine("ACCESS DENIED: Clearance Level too low.", 'error');
-    }
-  } else if (personnelFiles[file]) {
-    if (personnelFiles[file].level <= clearance) {
-      writeLine(personnelFiles[file].text);
-    } else {
-      writeLine("ACCESS DENIED: Clearance Level too low.", 'error');
-    }
+function handleCommand(cmd) {
+  const lowerCmd = cmd.toLowerCase();
+
+  if (!booted) {
+    bootSystem();
+    return;
+  }
+
+  if (!siteLogged) {
+    loginSite(cmd);
+    return;
+  }
+
+  if (!loggedIn) {
+    setClearanceKey(cmd);
+    return;
+  }
+
+  switch (lowerCmd) {
+    case 'help':
+      writeLine('Available Commands:\n');
+      writeLine('<span class="command">clear</span> - Clear terminal');
+      writeLine('<span class="command">list-scp</span> - List SCP files');
+      writeLine('<span class="command">list-personnel</span> - List personnel files');
+      writeLine('<span class="command">cf-info</span> - View Combat Units');
+      break;
+    case 'clear':
+      output.innerHTML = '';
+      break;
+    case 'list-scp':
+      listFiles('scp');
+      break;
+    case 'list-personnel':
+      listFiles('personnel');
+      break;
+    case 'cf-info':
+      writeLine('Available Units:\n');
+      writeLine('<span class="command">MTF</span> - Mobile Task Forces');
+      writeLine('<span class="command">RRT</span> - Rapid Response Teams');
+      writeLine('<span class="command">IA</span> - Internal Affairs');
+      writeLine('<span class="command">SSD</span> - Special Security Divisions');
+      writeLine("\nType cf-info-[unit] to view their divisions.");
+      break;
+    case 'cf-info-mtf':
+      writeLine('Mobile Task Force Units:\n');
+      writeLine('Alpha-1 | Shortcut : a1');
+      writeLine('Alpha-9 | Shortcut : a9');
+      writeLine('Omega-1 | Shortcut : o1');
+      writeLine('Epsilon-11 | Shortcut : e11');
+      writeLine('Nu-7 | Shortcut : nu7');
+      writeLine('Strike Team 414 | Shortcut : 414');
+      writeLine('Titan-1 | Shortcut : t1');
+      writeLine("\nType tf-info-[shortcut] to view specific unit information.");
+      break;
+    default:
+      if (lowerCmd.startsWith('open-file-scp-')) {
+        const file = scpFiles[cmd.replace('open-file-', '').toUpperCase()];
+        if (file && file.level <= clearance) {
+          writeLine(file.content);
+        } else {
+          writeLine('Access Denied or File Not Found.');
+        }
+      } else if (lowerCmd.startsWith('open-file-')) {
+        const file = personnelFiles[cmd.replace('open-file-', '')];
+        if (file && file.level <= clearance) {
+          writeLine(file.content);
+        } else {
+          writeLine('Access Denied or File Not Found.');
+        }
+      } else if (lowerCmd.startsWith('tf-info-')) {
+        showTaskForceInfo(lowerCmd.replace('tf-info-', ''));
+      } else {
+        writeLine('Unknown Command. Type <span class="command">help</span> for commands.');
+      }
+  }
+}
+
+function showTaskForceInfo(unit) {
+  const units = {
+    'a1': 'Alpha-1 operates under the Ethics Committee, deployed in matters of secrecy and ethical danger.',
+    'a9': 'Alpha-9 is specialized in the handling and cooperation with anomalies.',
+    'o1': 'Omega-1 intervenes swiftly where procedure fails and morals are ignored.',
+    'e11': 'Epsilon-11 "Nine-Tailed Fox" handles internal breaches.',
+    'nu7': 'Nu-7 "Hammer Down" is tasked with large scale combat operations.',
+    '414': 'Strike Team-414 specializes in VIP escort and O5 protection.',
+    't1': 'Titan-1 experts in unconventional warfare and psychological disruption.'
+  };
+  if (units[unit]) {
+    writeLine(units[unit]);
   } else {
-    writeLine("File not found.", 'error');
+    writeLine('Invalid Unit Shortcut.');
   }
 }
 
-function showMtfUnits() {
-  writeLine("Available MTF Units:");
-  for (const shortcut in mtfUnits) {
-    writeLine(`${mtfUnits[shortcut]} | Shortcut: <span class='command'>${shortcut}</span>`);
+inputLine.addEventListener('keydown', function(event) {
+  if (event.key === 'Enter') {
+    const cmd = inputLine.value;
+    inputLine.value = '';
+    writeLine('> ' + cmd);
+    handleCommand(cmd);
   }
-  writeLine("Type <span class='command'>tf-info-[shortcut]</span> to view specific unit information.");
-}
-
-function showMtfInfo(shortcut) {
-  if (mtfInfo[shortcut]) {
-    writeLine(mtfInfo[shortcut]);
-  } else {
-    writeLine("Unknown MTF unit.", 'error');
-  }
-}
+});
 </script>
 </body>
 </html>
